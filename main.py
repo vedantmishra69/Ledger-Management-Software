@@ -158,7 +158,6 @@ class Daily_Entry_Frame(tk.Frame):
         self.btn_back.config(command=lambda: controller.show_frame(Start_Page))
         
         self.conn = sqlite3.connect("user.db")
-        
     
     def add_items(self):
         self.row_var += 1
@@ -221,8 +220,8 @@ class Daily_Entry_Frame(tk.Frame):
         addi_cost = dana = com_cost = 0
         if self.ent_com.get():
             try: 
-                if self.var.get() == "Buyer": total += (int(self.ent_com.get()) / 100) * total
-                else: total -= (int(self.ent_com.get()) / 100) * total
+                if self.var.get() == "Buyer": total += (float(self.ent_com.get()) / 100) * total
+                else: total -= (float(self.ent_com.get()) / 100) * total
                 com_cost = float(self.ent_com.get())
             except: message.showwarning("", f"Invalid number \"{self.ent_com.get()}\""); return
         if self.ent_add_cost.get():
@@ -375,28 +374,28 @@ class Records_Frame(tk.Frame):
         columns = ('date', 'time', 'name', 'area', 'type', 'sum', 'total', 'paid')
         self.tree = ttk.Treeview(self, columns=columns, show='headings')
         
-        self.tree.column('date', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('date', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('date', text='Date')
         
-        self.tree.column('time', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('time', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('time', text='Time')
         
-        self.tree.column('name', anchor=tk.CENTER, stretch=tk.NO, width=120)
+        self.tree.column('name', anchor=tk.CENTER, stretch=tk.NO, width=150)
         self.tree.heading('name', text='Name')
         
-        self.tree.column('area', anchor=tk.CENTER, stretch=tk.NO, width=120)
+        self.tree.column('area', anchor=tk.CENTER, stretch=tk.NO, width=150)
         self.tree.heading('area', text='Area')
         
-        self.tree.column('type', anchor=tk.CENTER, stretch=tk.NO, width=120)
+        self.tree.column('type', anchor=tk.CENTER, stretch=tk.NO, width=150)
         self.tree.heading('type', text='Type')
         
-        self.tree.column('sum', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('sum', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('sum', text='Sum')
         
-        self.tree.column('total', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('total', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('total', text='Total')
         
-        self.tree.column('paid', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('paid', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('paid', text='Paid')
         
         self.tree.bind('<<TreeviewSelect>>', self.item_selected)
@@ -466,9 +465,9 @@ class Records_Frame(tk.Frame):
 
             tree.column('item_name', anchor=tk.CENTER, stretch=tk.NO, width=150)
             tree.heading('item_name', text='Item Name')
-            tree.column('item_weight', anchor=tk.CENTER, stretch=tk.NO, width=80)
+            tree.column('item_weight', anchor=tk.CENTER, stretch=tk.NO, width=100)
             tree.heading('item_weight', text='Weight')
-            tree.column('item_rate', anchor=tk.CENTER, stretch=tk.NO, width=80)
+            tree.column('item_rate', anchor=tk.CENTER, stretch=tk.NO, width=100)
             tree.heading('item_rate', text='Rate')
 
             date, time, name, area, typ, _, _, _ = record
@@ -580,22 +579,22 @@ class Accounts_Frame(tk.Frame):
         columns = ('date', 'time', 'name', 'area', 'type', 'dues')
         self.tree = ttk.Treeview(self, columns=columns, show='headings')
         
-        self.tree.column('date', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('date', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('date', text='Date')
         
-        self.tree.column('time', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('time', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('time', text='Time')
         
-        self.tree.column('name', anchor=tk.CENTER, stretch=tk.NO, width=120)
+        self.tree.column('name', anchor=tk.CENTER, stretch=tk.NO, width=150)
         self.tree.heading('name', text='Name')
         
-        self.tree.column('area', anchor=tk.CENTER, stretch=tk.NO, width=120)
+        self.tree.column('area', anchor=tk.CENTER, stretch=tk.NO, width=150)
         self.tree.heading('area', text='Area')
         
-        self.tree.column('type', anchor=tk.CENTER, stretch=tk.NO, width=120)
+        self.tree.column('type', anchor=tk.CENTER, stretch=tk.NO, width=150)
         self.tree.heading('type', text='Type')
         
-        self.tree.column('dues', anchor=tk.CENTER, stretch=tk.NO, width=80)
+        self.tree.column('dues', anchor=tk.CENTER, stretch=tk.NO, width=100)
         self.tree.heading('dues', text='Dues')
         
         self.tree.grid(row=5, column=0, columnspan=6, sticky='nsew')
@@ -647,15 +646,14 @@ class Accounts_Frame(tk.Frame):
         message.showinfo("", "Dues exported")
         cur.close()
         
-    
-        
-        
     def add_dues(self):
         date, time = self.get_time()
         name = str(self.ent_name.get())
         area = str(self.ent_area.get())
         typ = str(self.var.get())
-        dues = str(self.ent_add_dues.get())
+        dues = ""
+        try: dues = str(float(self.ent_add_dues.get()))
+        except: message.showwarning("", f"Invalid number {str(self.ent_add_dues.get())}"); return
         if not name or not area or not typ or not dues: 
             message.showwarning("", "No fields should be empty.")
             return
@@ -782,7 +780,7 @@ class tkinterApp(tk.Tk):
         self.frames = {}  
   
         for F in (Start_Page, Daily_Entry_Frame, Records_Frame, Accounts_Frame, Export_Frame):
-            par_frame = tk.Frame(container, width=800, height=500)
+            par_frame = tk.Frame(container, width=1000, height=500)
             frame = F(par_frame, self)
             self.frames[F] = par_frame
             frame.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
