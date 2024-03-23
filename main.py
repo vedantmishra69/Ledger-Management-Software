@@ -406,8 +406,12 @@ class Records_Frame(tk.Frame):
         self.scrollbar.grid(row=6, column=8, sticky='ns')
         
         self.btn_back = ttk.Button(self, text="Back")
-        self.btn_back.grid(row=7, column=1, columnspan=2)
+        self.btn_back.grid(row=7, column=1)
         self.btn_back.config(command=lambda: controller.show_frame(Start_Page))
+        
+        self.btn_exp = ttk.Button(self, text="Export")
+        self.btn_exp.grid(row=7, column=2)
+        self.btn_exp.config(command=self.export_records)
         
         self.lbl_total = ttk.Label(self, text="Total:")
         self.lbl_total.grid(row=7, column=4)
@@ -421,6 +425,8 @@ class Records_Frame(tk.Frame):
         self.lbl_total_paid = ttk.Label(self, text="0")
         self.lbl_total_paid.grid(row=7, column=7)
         
+        self.all_results = None
+        
     def fill_records(self):
         self.tree.delete(*self.tree.get_children())
         name = area = typ = date = ''
@@ -433,7 +439,9 @@ class Records_Frame(tk.Frame):
         if self.ent_day.get() and self.ent_month.get() and self.ent_year.get():
             date = f"{self.ent_year.get()}-{self.ent_month.get()}-{self.ent_day.get()}"
         query = f"SELECT date, time, name, area, type, item_sum, total, paid FROM daily_entry WHERE name REGEXP '{name}.*' AND area REGEXP '{area}.*' AND type REGEXP '{typ}' AND date REGEXP '{date}.*'"
+        query_all = f"SELECT * FROM daily_entry WHERE name REGEXP '{name}.*' AND area REGEXP '{area}.*' AND type REGEXP '{typ}' AND date REGEXP '{date}.*'"
         results = self.conn.execute(query).fetchall()
+        self.all_results = self.conn.execute(query_all).fetchall()
         if not results: message.showinfo("", "No records found")
         for date, time, name, area, typ, sum_, total, paid in results:
             yy, mm, dd = date.split('-')
@@ -512,6 +520,14 @@ class Records_Frame(tk.Frame):
             
             btn_del.config(command=record_delete)
             top.mainloop()
+            
+    def export_records(self):
+        cur = self.conn.cursor()
+        if not self.all_results: message.showinfo("", "No records found"); return
+        df = pd.DataFrame(self.all_results, columns=['Date', 'Time', 'Name', 'Area', 'Type', 'Item names', 'Item weight', 'Item rate', 'Item sum', 'Additional cost', 'Dana', 'Commission', 'Total', 'Paid'])
+        df.to_excel('records.xlsx', index=False)
+        message.showinfo("", "Records exported")
+        cur.close()
                     
             
         
@@ -588,8 +604,12 @@ class Accounts_Frame(tk.Frame):
         self.scrollbar.grid(row=5, column=6, sticky='ns')
         
         self.btn_back = ttk.Button(self, text="Back")
-        self.btn_back.grid(row=6, column=1, columnspan=2)
+        self.btn_back.grid(row=6, column=1)
         self.btn_back.config(command=lambda: controller.show_frame(Start_Page))
+        
+        self.btn_exp = ttk.Button(self, text="Export")
+        self.btn_exp.grid(row=6, column=2)
+        self.btn_exp.config(command=self.export_records)
         
         self.lbl_total = ttk.Label(self, text="Total:")
         self.lbl_total.grid(row=6, column=4)
@@ -599,6 +619,8 @@ class Accounts_Frame(tk.Frame):
         
         self.conn = sqlite3.connect("user.db")
         self.conn.create_function('regexp', 2, lambda x, y: 1 if re.search(x,y) else 0)
+        
+        self.results = None
     
     def fill_records(self):
         self.tree.delete(*self.tree.get_children())
@@ -607,15 +629,23 @@ class Accounts_Frame(tk.Frame):
         if self.ent_name.get(): name = self.fix_str(self.ent_name.get())
         if self.ent_area.get(): area = self.fix_str(self.ent_area.get())
         if self.var.get() != 'Both': typ = self.var.get()
-        query = f"SELECT date, time, name, area, type, dues FROM accounts WHERE name REGEXP '{name}.*' AND area REGEXP '{area}.*' AND type REGEXP '{typ}' AND dues<>0"
-        results = self.conn.execute(query).fetchall()
-        if not results: message.showinfo("", "No records found")
-        for date, time, name, area, typ, dues in results:
+        query = f"SELECT * FROM accounts WHERE name REGEXP '{name}.*' AND area REGEXP '{area}.*' AND type REGEXP '{typ}' AND dues<>0"
+        self.results = self.conn.execute(query).fetchall()
+        if not self.results: message.showinfo("", "No records found")
+        for date, time, name, area, typ, dues in self.results:
             yy, mm, dd = date.split('-')
             fix_date = f"{dd}-{mm}-{yy}"
             total_dues += float(dues)
             self.tree.insert('', tk.END, values=(fix_date, time, name.capitalize(), area.capitalize(), typ, dues))
         self.lbl_total_dues.config(text=str(total_dues))
+    
+    def export_records(self):
+        if not self.results: message.showinfo("", "No records found"); return
+        cur = self.conn.cursor()
+        df = pd.DataFrame(self.results, columns=['Date', 'Time', 'Name', 'Area', 'Type', 'Dues'])
+        df.to_excel('dues.xlsx', index=False) 
+        message.showinfo("", "Dues exported")
+        cur.close()
         
     
         
@@ -739,7 +769,7 @@ class Start_Page(tk.Frame):
 
         
 
-class tkinterApp(tk.Tk):
+class tkinterApp(tk.Tk): 
     def __init__(self, *args, **kwargs): 
         tk.Tk.__init__(self, *args, **kwargs)
         
